@@ -4,6 +4,7 @@
 		<script src="libs/lodash.js"></script>
 		<script src="libs/reqwest.js"></script>
 		<script src="libs/when.js"></script>
+		<title>HalJS</title>
 	</head>
 	<body>
 		<div id="app">
@@ -224,7 +225,7 @@
 						HalJS.get('configurations', resources.provider_configurations).then(function(configurations) {
 
 							_.each(resources.provider_categories.categories, function(category) {
-								console.log(category.name);
+								console.log('%c' + category.name, 'color: #00f');
 
 								console.log(_.map(category.providers, function(provider) {
 									return _.findWhere(configurations, {id: provider}).name;
@@ -256,6 +257,28 @@
 
 					})
 					.done();
+
+				// Fetch the amount of times a provider is currently published in the kiosk
+				api
+					.then(function(api) {
+						return when.keys.all({
+							providers: HalJS.get('provider_configurations', api).fold(HalJS.get, 'configurations'),
+							issues: HalJS.get('publications', api)
+								.fold(HalJS.get, 'categories')
+								.fold(HalJS.get, 'issues')
+						});
+					}).then(function(values) {
+						console.log('%c Fetch the amount of times a provider is current published in the kiosk', 'background-color: #0f0; padding: 5px; display: block;');
+
+						_.each(values.providers, function(provider) {
+
+							console.log(provider.name + ': ' + _.filter(values.issues, function(issue) {
+								return issue.provider.id === provider.id;
+							}).length);
+						});
+
+						console.log('');
+					}).done();
 
 			})();
 
