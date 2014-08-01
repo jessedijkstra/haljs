@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="libs/lodash.js"></script>
+		<script src="libs/reqwest.js"></script>
+		<script src="libs/when.js"></script>
+	</head>
+	<body>
+		<div id="app">
+
+		</div>
+		<script>
+			(function() {
+				'use strict';
+
+				/**
+				 * TODO:
+				 * - Add zoom levels to key var
+				 * - Add templating for multiple resources
+				 */
+
+				var HalJS = {
+
+					/**
+					 * Fetch an URL and return data
+					 * @param  {String} url
+					 * @return {Promise}
+					 */
+					fetch: function(url) {
+						return when(reqwest({
+							url: url,
+							type: 'json',
+							crossDomain: true,
+							contentType: 'application/json; charset=utf-8',
+							accept: 'application/hal+json'
+						}));
+					},
+
+					/**
+					 * Get an resource residing on key from a certain resource.
+					 *
+					 * Automatically detects whether to fetch multiple resources.
+					 * Fetches from server is no embed is present
+					 *
+					 * @param  {Array|String} keys
+					 * @param  {JSON} resource
+					 * @return {Promise}
+					 */
+					get: function(keys, resource) {
+
+						if (_.isArray(keys)) {
+
+							return when.keys.all(_.reduce(keys, function(object, key, index) {
+								object[key] = HalJS._getKey(key, resource);
+
+								return object;
+							}, {}));
+
+						} else {
+
+							return HalJS._getKey(keys, resource);
+
+						}
+					},
+
+					/**
+					 * Get a single key from a resource.
+					 * Automatically detects if the resource is an array
+					 *
+					 * @param  {String} key
+					 * @param  {JSON} resource
+					 * @return {Promise}
+					 */
+					_getKey: function(key, resource) {
+						if (_.isArray(resource)) {
+							return when(HalJS._getFromArrayOfResources(key, resource));
+						} else {
+							return when(HalJS._getFromResource(key, resource));
+						}
+					},
+
+					/**
+					 * Get values from multiple resources and flatten them into 1 array
+					 *
+					 * @param  {String} key
+					 * @param  {JSON} resources
+					 * @return {Promise}
+					 */
+					_getFromArrayOfResources: function(key, resources) {
+						return when.map(resources, function(resource) {
+							return HalJS._getFromResource(key, resource);
+						}).then(_.flatten);
+					},
+
+					/**
+					 * Get a resource from key and automatically detect whether to
+					 * fetch from server or use embedded.
+					 *
+					 * @param  {String} key
+					 * @param  {JSON} resource
+					 * @return {*}
+					 */
+					_getFromResource: function(key, resource) {
+
+						if (_.isObject(key)) {
+							return HalJS._getTemplatedLink(key.name, resource, key.values);
+						}
+
+						if (resource._embedded && resource._embedded[key]) {
+							return HalJS._getEmbed(key, resource);
+						}
+
+						if (resource._links && resource._links[key]) {
+							return HalJS._getLink(key, resource);
+						}
+					},
+
+					/**
+					 * Get an embedded resource
+					 *
+					 * @param  {String} key
+					 * @param  {JSON} resource
+					 * @return {JSON}
+					 */
+					_getEmbed: function(key, resource) {
+						return resource._embedded[key];
+					},
+
+					/**
+					 * Get a link from a resource
+					 * If the response is an array, return array of resources
+					 *
+					 * @param  {String} key
+					 * @param  {JSON} resource
+					 * @return {Promise}
+					 */
+					_getLink: function(key, resource, values) {
+
+						if (_.isArray(resource._links[key])) {
+							return when.map(resource._links[key], function(link) {
+								return HalJS.fetch(link.href);
+							});
+						}
+
+						return HalJS.fetch(resource._links[key].href);
+					},
+
+					/**
+					 * Get a templated link from a resource
+					 * @param  {String} key
+					 * @param  {JSON} resource
+					 * @param  {Object} values
+					 * @return {Promise}
+					 */
+					_getTemplatedLink: function(key, resource, values) {
+						if (_.isArray(resource._links[key])) {
+
+							return when.map(resource._links[key], function(link) {
+								return HalJS.fetch(HalJS._parseTemplatedLink(link, values));
+							});
+
+						}
+
+						return HalJS.fetch(HalJS._parseTemplatedLink(resource._links[key], values));
+					},
+
+					/**
+					 * Parse a templated link with corresponding values
+					 * Returns a string containing the parsed URL
+					 * @param  {Object} link
+					 * @param  {Object} values
+					 * @return {String}
+					 */
+					_parseTemplatedLink: function(link, values) {
+
+						var fragments = link.href.match(/{([^}]+)}/g);
+
+						return _.reduce(fragments, function(link, fragment) {
+							fragment = fragment.replace('{', '').replace('}', '');
+
+							if(values[fragment]) {
+								link = link.href.replace('{' + fragment + '}', values[fragment]);
+							}
+
+							return link;
+						}, link);
+					}
+				};
+
+				// Fetch api
+				var api = HalJS.fetch('https://static.blendle.nl/api.json');
+
+				api.then(function(api) {
+
+					console.log('%c Fetch API', 'background-color: #0f0; padding: 5px; display: block;');
+
+					console.log(api);
+
+					console.log('');
+				});
+
+				// Fetch user with id 'jesse'
+				api
+					.fold(HalJS.get, {name: 'user', values: {user_id: 'jesse'}})
+					.then(function(user) {
+
+						console.log('%c Fetch users with id "jesse" and "pepijn"', 'background-color: #0f0; padding: 5px; display: block;');
+
+						console.log(user);
+
+						console.log('');
+
+					})
+					.done();
+
+
+				// Fetch both provider_categories and provider_configurations
+				api
+					.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
+					.then(function(resources) {
+
+						console.log('%c Fetch Providers Categories and Configurations and display categories with provider names', 'background-color: #0f0; padding: 5px; display: block;');
+
+						HalJS.get('configurations', resources.provider_configurations).then(function(configurations) {
+
+							_.each(resources.provider_categories.categories, function(category) {
+								console.log(category.name);
+
+								console.log(_.map(category.providers, function(provider) {
+									return _.findWhere(configurations, {id: provider}).name;
+								}));
+
+							});
+
+							console.log('');
+
+						});
+
+					})
+					.done();
+
+				// Fetch Publications, then Categories, then Issues, and display covers of the issues
+				api
+					.fold(HalJS.get, 'publications')
+					.fold(HalJS.get, 'categories')
+					.fold(HalJS.get, 'issues')
+					.then(function(issues) {
+
+						console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues', 'background-color: #0f0; padding: 5px; display: block;');
+
+						_.each(issues, function(issue, i) {
+							console.log(issue._links.page_preview.href);
+						});
+
+						console.log('');
+
+					})
+					.done();
+
+			})();
+
+		</script>
+	</body>
+</html>
