@@ -12,6 +12,8 @@
 
 		ajax: null,
 
+		promise: when,
+
 		/**
 		 * Applies a function against an accumulator and each value of the array
 		 * (from left-to-right) has to reduce it to a single value.
@@ -58,18 +60,15 @@
 		},
 
 		/**
-		 * Fetch an URL and return data
+		 * INTERFACE: must be implemented before use of HalJS
+		 *
+		 * Fetch an URL and return a 'when' compatible promise containing data
+		 *
 		 * @param  {String} url
-		 * @return {Promise}
+		 * @return {Promise} Must be a when compatible promise
 		 */
 		fetch: function(url) {
-			return when(HalJS.ajax({
-				url: url,
-				type: 'json',
-				crossDomain: true,
-				contentType: 'application/json; charset=utf-8',
-				accept: 'application/hal+json'
-			}));
+			throw new Error('Fetch function not implemented');
 		},
 
 		/**
