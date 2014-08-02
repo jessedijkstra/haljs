@@ -30,215 +30,215 @@
 	};
 
 
+	//
 	// Mutable
-	(function() {
+	//
 
-		// Fetch api
-		var api = HalJS.fetch('https://static.blendle.nl/api.json');
+	// Fetch api
+	var mutableApi = HalJS.fetch('https://static.blendle.nl/api.json');
 
-		api
-			.then(function(api) {
+	mutableApi
+		.then(function(api) {
 
-				console.log('%c Fetch API (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch API (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				console.log(api);
+			console.log(api);
 
-				console.log('');
-			})
-			.done();
+			console.log('');
+		})
+		.done();
 
-		// Fetch user with id 'jesse'
-		api
-			.fold(HalJS.get, {name: 'user', values: {user_id: 'jesse'}})
-			.then(function(user) {
+	// Fetch user with id 'jesse'
+	mutableApi
+		.fold(HalJS.get, {name: 'user', values: {user_id: 'jesse'}})
+		.then(function(user) {
 
-				console.log('%c Fetch users with id "jesse" and "pepijn" (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch users with id "jesse" and "pepijn" (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				console.log(user);
+			console.log(user);
 
-				console.log('');
+			console.log('');
 
-			})
-			.done();
+		})
+		.done();
 
 
-		// Fetch both provider_categories and provider_configurations
-		api
-			.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
-			.then(function(resources) {
+	// Fetch both provider_categories and provider_configurations
+	mutableApi
+		.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
+		.then(function(resources) {
 
-				console.log('%c Fetch Providers Categories and Configurations and display categories with provider names (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch Providers Categories and Configurations and display categories with provider names (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				HalJS.get('configurations', resources.provider_configurations).then(function(configurations) {
+			HalJS.get('configurations', resources.provider_configurations).then(function(configurations) {
 
-					_.each(resources.provider_categories.categories, function(category) {
-						console.log('%c' + category.name, 'color: #00f');
+				_.each(resources.provider_categories.categories, function(category) {
+					console.log('%c' + category.name, 'color: #00f');
 
-						console.log(_.map(category.providers, function(provider) {
-							return _.findWhere(configurations, {id: provider}).name;
-						}));
+					console.log(_.map(category.providers, function(provider) {
+						return _.findWhere(configurations, {id: provider}).name;
+					}));
 
-					});
-
-					console.log('');
-
-				});
-
-			})
-			.done();
-
-		// Fetch Publications, then Categories, then Issues, and display covers of the issues
-		api
-			.fold(HalJS.get, 'publications')
-			.fold(HalJS.get, 'categories')
-			.fold(HalJS.get, 'issues')
-			.then(function(issues) {
-
-				console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
-
-				_.each(issues, function(issue, i) {
-					console.log(issue._links.page_preview.href);
 				});
 
 				console.log('');
 
-			})
-			.done();
+			});
 
-		// Fetch the amount of times a provider is currently published in the kiosk
-		api
-			.then(function(api) {
-				return when.keys.all({
-					providers: HalJS.get('provider_configurations', api).fold(HalJS.get, 'configurations'),
-					issues: HalJS.get('publications', api)
-						.fold(HalJS.get, 'categories')
-						.fold(HalJS.get, 'issues')
-				});
-			}).then(function(values) {
-				console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
+		})
+		.done();
 
-				_.each(values.providers, function(provider) {
+	// Fetch Publications, then Categories, then Issues, and display covers of the issues
+	mutableApi
+		.fold(HalJS.get, 'publications')
+		.fold(HalJS.get, 'categories')
+		.fold(HalJS.get, 'issues')
+		.then(function(issues) {
 
-					console.log(provider.name + ': ' + _.filter(values.issues, function(issue) {
-						return issue.provider.id === provider.id;
-					}).length);
-				});
+			console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				console.log('');
-			}).done();
-	})();
+			_.each(issues, function(issue, i) {
+				console.log(issue._links.page_preview.href);
+			});
+
+			console.log('');
+
+		})
+		.done();
+
+	// Fetch the amount of times a provider is currently published in the kiosk
+	mutableApi
+		.then(function(api) {
+			return when.keys.all({
+				providers: HalJS.get('provider_configurations', api).fold(HalJS.get, 'configurations'),
+				issues: HalJS.get('publications', api)
+					.fold(HalJS.get, 'categories')
+					.fold(HalJS.get, 'issues')
+			});
+		}).then(function(values) {
+			console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories (mutable)', 'background-color: #0f0; padding: 5px; display: block;');
+
+			_.each(values.providers, function(provider) {
+
+				console.log(provider.name + ': ' + _.filter(values.issues, function(issue) {
+					return issue.provider.id === provider.id;
+				}).length);
+			});
+
+			console.log('');
+		}).done();
 
 
+	//
 	// Immutable
-	(function() {
+	//
 
-		// Fetch api
-		var api = HalJS.fetch('https://static.blendle.nl/api.json', true);
+	// Fetch api
+	var immutableApi = HalJS.fetch('https://static.blendle.nl/api.json', true);
 
-		api
-			.then(function(api) {
+	immutableApi
+		.then(function(api) {
 
-				console.log('%c Fetch API (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch API (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				console.log(api.toJSON());
+			console.log(api.toJSON());
 
-				console.log('');
-			}).done();
-
-
-		// Fetch user with id 'jesse'
-		api
-			.fold(HalJS.get, {name: 'user', values: {user_id: 'jesse'}})
-			.then(function(user) {
-
-				console.log('%c Fetch users with id "jesse" and "pepijn" (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
-
-				console.log(user.toJSON());
-
-				console.log('');
-
-			})
-			.done();
+			console.log('');
+		}).done();
 
 
-		// Fetch both provider_categories and provider_configurations
-		api
-			.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
-			.then(function(resources) {
+	// Fetch user with id 'jesse'
+	immutableApi
+		.fold(HalJS.get, {name: 'user', values: {user_id: 'jesse'}})
+		.then(function(user) {
 
-				console.log('%c Fetch Providers Categories and Configurations and display categories with provider names (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch users with id "jesse" and "pepijn" (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				HalJS.get('configurations', resources.get('provider_configurations')).then(function(configurations) {
+			console.log(user.toJSON());
 
-					resources.get('provider_categories').get('categories').forEach(function(category) {
+			console.log('');
 
-						console.log('%c' + category.get('name'), 'color: #00f');
-
-						console.log(category.get('providers').map(function(provider) {
-							return configurations
-								.filter(function(configuration) {
-									return configuration.get('id') === provider;
-								})
-								.first()
-								.get('name')
-						}).toArray());
-
-					});
-
-					console.log('');
-
-				});
-
-			})
-			.done();
+		})
+		.done();
 
 
+	// Fetch both provider_categories and provider_configurations
+	immutableApi
+		.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
+		.then(function(resources) {
 
-		// Fetch Publications, then Categories, then Issues, and display covers of the issues
-		api
-			.fold(HalJS.get, 'publications')
-			.fold(HalJS.get, 'categories')
-			.fold(HalJS.get, 'issues')
-			.then(function(issues) {
+			console.log('%c Fetch Providers Categories and Configurations and display categories with provider names (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			HalJS.get('configurations', resources.get('provider_configurations')).then(function(configurations) {
 
-				issues.forEach(function(issue) {
-					console.log(issue.get('_links').get('page_preview').get('href'));
+				resources.get('provider_categories').get('categories').forEach(function(category) {
+
+					console.log('%c' + category.get('name'), 'color: #00f');
+
+					console.log(category.get('providers').map(function(provider) {
+						return configurations
+							.filter(function(configuration) {
+								return configuration.get('id') === provider;
+							})
+							.first()
+							.get('name')
+					}).toArray());
+
 				});
 
 				console.log('');
 
-			})
-			.done();
+			});
 
-		// Fetch the amount of times a provider is currently published in the kiosk
-		api
-			.then(function(api) {
-				return when.keys.all({
-					providers: HalJS.get('provider_configurations', api).fold(HalJS.get, 'configurations'),
-					issues: HalJS.get('publications', api)
-						.fold(HalJS.get, 'categories')
-						.fold(HalJS.get, 'issues')
-				}).then(function(values) {
-					return new Immutable.fromJS(values);
-				});
+		})
+		.done();
+
+
+
+	// Fetch Publications, then Categories, then Issues, and display covers of the issues
+	immutableApi
+		.fold(HalJS.get, 'publications')
+		.fold(HalJS.get, 'categories')
+		.fold(HalJS.get, 'issues')
+		.then(function(issues) {
+
+			console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+
+			issues.forEach(function(issue) {
+				console.log(issue.get('_links').get('page_preview').get('href'));
+			});
+
+			console.log('');
+
+		})
+		.done();
+
+	// Fetch the amount of times a provider is currently published in the kiosk
+	immutableApi
+		.then(function(api) {
+			return when.keys.all({
+				providers: HalJS.get('provider_configurations', api).fold(HalJS.get, 'configurations'),
+				issues: HalJS.get('publications', api)
+					.fold(HalJS.get, 'categories')
+					.fold(HalJS.get, 'issues')
 			}).then(function(values) {
-				console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+				return new Immutable.fromJS(values);
+			});
+		}).then(function(values) {
+			console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
 
-				console.log(values);
+			console.log(values);
 
-				values.get('providers').forEach(function(provider) {
+			values.get('providers').forEach(function(provider) {
 
-					var issues = values.get('issues').filter(function(issue) {
-						return issue.get('provider').get('id') === provider.get('id');
-					});
-
-					console.log(provider.get('name') + ': ' + issues.toJSON().length);
+				var issues = values.get('issues').filter(function(issue) {
+					return issue.get('provider').get('id') === provider.get('id');
 				});
 
-				console.log('');
-			}).done();
-	})();
+				console.log(provider.get('name') + ': ' + issues.toJSON().length);
+			});
+
+			console.log('');
+		}).done();
 
 })();
