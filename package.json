@@ -5,13 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "immutable": "^2.0.3",
-    "reqwest": "^1.1.2",
     "when": "^3.4.2"
   },
   "devDependencies": {
     "browserify": "^5.9.1",
-    "lodash": "^2.4.1",
-    "reqwest": "^1.1.2"
+    "lodash": "^2.4.1"
   },
   "scripts": {
     "browserify-test": "browserify -s main main.js --no-detect-globals -o build/main.js"
