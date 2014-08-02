@@ -17,7 +17,6 @@
     , byTag = 'getElementsByTagName'
     , readyState = 'readyState'
     , contentType = 'Content-Type'
-
     , head = doc[byTag]('head')[0]
     , uniqid = 0
     , callbackPrefix = 'reqwest_' + (+new Date())

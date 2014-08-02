@@ -1,12 +1,11 @@
 (function() {
 	'use strict';
 
+	var Immutable = require('./node_modules/immutable/dist/Immutable');
 
-	/**
-	 * TODO:
-	 * - Add zoom levels to key var
-	 * - Add templating for multiple resources
-	 */
+	var when = require('./node_modules/when/when');
+
+	when.keys = require('./node_modules/when/keys');
 
 	var HalJS = {
 
@@ -61,6 +60,39 @@
 			return value !== null && typeof value === 'object';
 		},
 
+		isVector: function(value) {
+			return value instanceof Immutable.Vector;
+		},
+
+		isMap: function(value) {
+			return value instanceof Immutable.Map;
+		},
+
+		isImmutable: function(value) {
+			return HalJS.isVector(value) || HalJS.isMap(value);
+		},
+
+		toMutable: function(value) {
+
+			if (HalJS.isImmutable(value)) {
+				return value.toJSON();
+			}
+
+			return value;
+		},
+
+		toImmutable: function(value) {
+			return new Immutable.fromJS(value);
+		},
+
+		_parse: function(resource, data) {
+			if (HalJS.isImmutable(resource)) {
+				return HalJS.toImmutable(data);
+			} else {
+				return data;
+			}
+		},
+
 		/**
 		 * Returns a new object containing the objects values
 		 * default from the defaults object
@@ -87,8 +119,14 @@
 		 * @param  {String} url
 		 * @return {Promise}
 		 */
-		fetch: function(url) {
-			return when(HalJS.ajax(HalJS.defaults({url: url}, HalJS.ajaxOptions)));
+		fetch: function(url, immutable) {
+			return when(HalJS.ajax(HalJS.defaults({url: url}, HalJS.ajaxOptions))).then(function(data) {
+				if (immutable) {
+					return HalJS.toImmutable(data);
+				} else {
+					return data;
+				}
+			});
 		},
 
 		/**
@@ -103,17 +141,19 @@
 		 */
 		get: function(keys, resource) {
 
+			var mutableResource = HalJS.toMutable(resource);
+
 			if (HalJS.isArray(keys)) {
 
 				return when.keys.all(HalJS.reduce(keys, function(object, key, index) {
-					object[key] = HalJS._getKey(key, resource);
+					object[key] = HalJS._getKey(key, mutableResource);
 
 					return object;
-				}, {}));
+				}, {})).fold(HalJS._parse, resource);
 
 			} else {
 
-				return HalJS._getKey(keys, resource);
+				return HalJS._getKey(keys, mutableResource).fold(HalJS._parse, resource);
 
 			}
 		},
@@ -242,6 +282,5 @@
 		}
 	};
 
-	window.HalJS = HalJS;
-
+	module.exports = HalJS;
 })();
