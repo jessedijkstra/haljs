@@ -61,6 +61,14 @@
 			return value !== null && typeof value === 'object';
 		},
 
+		/**
+		 * Returns a new object containing the objects values
+		 * default from the defaults object
+		 *
+		 * @param  {Object} object
+		 * @param  {Object} defaults
+		 * @return {Object}
+		 */
 		defaults: function(object, defaults) {
 			return HalJS.reduce(defaults, function(object, value, key) {
 
