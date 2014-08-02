@@ -10,9 +10,11 @@
 
 	var HalJS = {
 
-		ajax: null,
+		ajax: function() {
+			throw new Error('An ajax object must be set for HalJS to fetch data from server');
+		},
 
-		promise: when,
+		ajaxOptions: {},
 
 		/**
 		 * Applies a function against an accumulator and each value of the array
@@ -59,16 +61,26 @@
 			return value !== null && typeof value === 'object';
 		},
 
+		defaults: function(object, defaults) {
+			return HalJS.reduce(defaults, function(object, value, key) {
+
+				if (!object[key]) {
+					object[key] = value;
+				}
+
+				return object;
+
+			}, object);
+		},
+
 		/**
-		 * INTERFACE: must be implemented before use of HalJS
-		 *
 		 * Fetch an URL and return a 'when' compatible promise containing data
 		 *
 		 * @param  {String} url
-		 * @return {Promise} Must be a when compatible promise
+		 * @return {Promise}
 		 */
 		fetch: function(url) {
-			throw new Error('Fetch function not implemented');
+			return when(HalJS.ajax(HalJS.defaults({url: url}, HalJS.ajaxOptions)));
 		},
 
 		/**

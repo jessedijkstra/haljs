@@ -27,15 +27,13 @@
 				 * - Add templating for multiple resources
 				 */
 
-				HalJS.fetch = function(url) {
-					return HalJS.promise(reqwest({
-						url: url,
-						type: 'json',
-						crossDomain: true,
-						contentType: 'application/json; charset=utf-8',
-						accept: 'application/hal+json'
-					}));
-				}
+				HalJS.ajax = reqwest;
+				HalJS.ajaxOptions = {
+					type: 'json',
+					crossDomain: true,
+					contentType: 'application/json; charset=utf-8',
+					accept: 'application/hal+json'
+				};
 
 				// Fetch api
 				var api = HalJS.fetch('https://static.blendle.nl/api.json');
