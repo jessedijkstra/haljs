@@ -24,15 +24,15 @@
 		 * @param  {*} initialValue
 		 * @return {*}
 		 */
-		reduce: function(collection, cb, initialValue) {
+		reduceObject: function(collection, cb, initialValue) {
 			return Array.prototype.reduce.call(collection, cb, initialValue);
 		},
 
 		/**
 		 * Flattens (shallow) an nested array or vectory to corresponding type
 		 *
-		 * @param  {Array|Vector} array
-		 * @return {Array|Vector}
+		 * @param  {Vector} array
+		 * @return {Vector}
 		 */
 		flatten: function(vector) {
 			return vector.reduce(function(a, b) {
@@ -153,7 +153,7 @@
 		 * @return {Object}
 		 */
 		defaults: function(object, defaults) {
-			return HalJS.reduce(defaults, function(object, value, key) {
+			return HalJS.reduceObject(defaults, function(object, value, key) {
 
 				if (!object[key]) {
 					object[key] = value;
@@ -198,7 +198,7 @@
 		},
 
 		_getKeys: function(keys, resource) {
-			return when.keys.all(HalJS.reduce(keys, function(object, key, index) {
+			return when.keys.all(HalJS.reduceObject(keys, function(object, key, index) {
 
 				if (HalJS.isObject(key)) {
 					object[key.name] = HalJS._getKey(key, resource);
@@ -276,7 +276,7 @@
 		 * Get a link from a resource
 		 * If the response is an array, return array of resources
 		 *
-		 * @param  {String} key
+		 * @param  {String|Object|Array} key
 		 * @param  {JSON} resource
 		 * @return {Promise}
 		 */
@@ -299,7 +299,8 @@
 
 		/**
 		 * Get a templated link from a resource
-		 * @param  {String} key
+		 *
+		 * @param  {Object|Array} key
 		 * @param  {JSON} resource
 		 * @param  {Object} values
 		 * @return {Promise}
@@ -317,6 +318,14 @@
 			return HalJS.fetch(HalJS._parseTemplatedLink(resource.get('_links').get(key), values));
 		},
 
+		/**
+		 * Get a vector with templated links from a resource
+		 *
+		 * @param  {String} key
+		 * @param  {JSON} resource
+		 * @param  {Object} values
+		 * @return {Promise}
+		 */
 		_getVectorOfTemplatedLinks: function(key, resource, values) {
 
 			return when
@@ -326,6 +335,15 @@
 				.then(HalJS.toImmutable);
 		},
 
+
+		/**
+		 * Get multiple templated links from a resource
+		 *
+		 * @param  {Array} key
+		 * @param  {JSON} resource
+		 * @param  {Object} values
+		 * @return {Promise}
+		 */
 		_getVectorOfMultipleTemplatedLinks: function(key, resource, values) {
 			return when.all(values.map(function(values) {
 
@@ -337,6 +355,7 @@
 		/**
 		 * Parse a templated link with corresponding values
 		 * Returns a string containing the parsed URL
+		 *
 		 * @param  {Object} link
 		 * @param  {Object} values
 		 * @return {String}
@@ -345,7 +364,7 @@
 
 			var fragments = link.get('href').match(/{([^}]+)}/g);
 
-			return HalJS.reduce(fragments, function(link, fragment) {
+			return HalJS.reduceObject(fragments, function(link, fragment) {
 				fragment = fragment.replace('{', '').replace('}', '');
 
 				if(values[fragment]) {
