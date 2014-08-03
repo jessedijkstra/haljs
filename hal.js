@@ -60,18 +60,43 @@
 			return value !== null && typeof value === 'object';
 		},
 
+		/**
+		 * Check if a value is a vector
+		 *
+		 * @param {*}  value
+		 * @return {Boolean}
+		 */
 		isVector: function(value) {
 			return value instanceof Immutable.Vector;
 		},
 
+		/**
+		 * Check if a value is a map
+		 *
+		 * @param {*}  value
+		 * @return {Boolean}
+		 */
 		isMap: function(value) {
 			return value instanceof Immutable.Map;
 		},
 
+		/**
+		 * Check if a value is immutable
+		 *
+		 * @param {*}  value
+		 * @return {Boolean}
+		 */
 		isImmutable: function(value) {
 			return HalJS.isVector(value) || HalJS.isMap(value);
 		},
 
+
+		/**
+		 * Convert immutable value to mutable value
+		 *
+		 * @param {*}  value
+		 * @return {*}
+		 */
 		toMutable: function(value) {
 
 			if (HalJS.isImmutable(value)) {
@@ -81,10 +106,23 @@
 			return value;
 		},
 
+		/**
+		 * Convert mutable value to immutable value
+		 *
+		 * @param {*}  value
+		 * @return {*}
+		 */
 		toImmutable: function(value) {
 			return new Immutable.fromJS(value);
 		},
 
+		/**
+		 * Parse data to produce immutable or mutable based on mutability of resource
+		 *
+		 * @param {*} resource
+		 * @param {*} data
+		 * @return {*}
+		 */
 		_parse: function(resource, data) {
 			if (HalJS.isImmutable(resource)) {
 				return HalJS.toImmutable(data);
