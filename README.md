@@ -12,7 +12,7 @@ Run the following commands
 Set up a browser environment on blendle.local and map it to current directory
 
 
-TODO:
+# TODO
 - Setup tests
 - Implement caching layer with localstorage or memcache
 - Add zoom levels
