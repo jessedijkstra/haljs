@@ -16,19 +16,6 @@
 		ajaxOptions: {},
 
 		/**
-		 * Applies a function against an accumulator and each value of the array
-		 * (from left-to-right) has to reduce it to a single value.
-		 *
-		 * @param  {Array|Object} collection
-		 * @param  {Function} cb
-		 * @param  {*} initialValue
-		 * @return {*}
-		 */
-		reduceObject: function(collection, cb, initialValue) {
-			return Array.prototype.reduce.call(collection, cb, initialValue);
-		},
-
-		/**
 		 * Flattens (shallow) an nested array or vectory to corresponding type
 		 *
 		 * @param  {Vector} array
@@ -51,7 +38,7 @@
 		},
 
 		/**
-		 * Check if a value is an object
+		 * Check if value is an object
 		 *
 		 * @param  {*}  value
 		 * @return {Boolean}
@@ -60,12 +47,17 @@
 			return value !== null && typeof value === 'object';
 		},
 
+		/**
+		 * Check if value is a string
+		 * @param  {[type]}  value [description]
+		 * @return {Boolean}       [description]
+		 */
 		isString: function(value) {
 			return typeof value === 'string';
 		},
 
 		/**
-		 * Check if a value is a vector
+		 * Check if value is a vector
 		 *
 		 * @param {*}  value
 		 * @return {Boolean}
@@ -75,7 +67,7 @@
 		},
 
 		/**
-		 * Check if a value is a map
+		 * Check if value is a map
 		 *
 		 * @param {*}  value
 		 * @return {Boolean}
@@ -85,7 +77,7 @@
 		},
 
 		/**
-		 * Check if a value is immutable
+		 * Check if value is immutable
 		 *
 		 * @param {*}  value
 		 * @return {Boolean}
@@ -120,48 +112,24 @@
 			return new Immutable.fromJS(value);
 		},
 
-
+		/**
+		 * Check if key is embedded in resource
+		 * @param  {String}  key
+		 * @param  {Map}  resource
+		 * @return {Boolean}
+		 */
 		isEmbedded: function(key, resource) {
 			return resource.get('_embedded') && resource.get('_embedded').get(key);
 		},
 
+		/**
+		 * Check key is linked in resource
+		 * @param  {String}  key
+		 * @param  {Map}  resource
+		 * @return {Boolean}
+		 */
 		isLinked: function(key, resource) {
 			return resource.get('_links') && resource.get('_links').get(key);
-		},
-
-		/**
-		 * Parse data to produce immutable or mutable based on mutability of resource
-		 *
-		 * @param {*} resource
-		 * @param {*} data
-		 * @return {*}
-		 */
-		_parse: function(resource, data) {
-			if (HalJS.isImmutable(resource)) {
-				return HalJS.toImmutable(data);
-			} else {
-				return data;
-			}
-		},
-
-		/**
-		 * Returns a new object containing the objects values
-		 * default from the defaults object
-		 *
-		 * @param  {Object} object
-		 * @param  {Object} defaults
-		 * @return {Object}
-		 */
-		defaults: function(object, defaults) {
-			return HalJS.reduceObject(defaults, function(object, value, key) {
-
-				if (!object[key]) {
-					object[key] = value;
-				}
-
-				return object;
-
-			}, object);
 		},
 
 		/**
@@ -171,7 +139,7 @@
 		 * @return {Promise}
 		 */
 		fetch: function(url) {
-			return when(HalJS.ajax(HalJS.defaults({url: url}, HalJS.ajaxOptions))).then(HalJS.toImmutable);
+			return when(HalJS.ajax(HalJS._defaults({url: url}, HalJS.ajaxOptions))).then(HalJS.toImmutable);
 		},
 
 		/**
@@ -197,8 +165,70 @@
 			}
 		},
 
+		invalidate: function(keys, resource) {
+			if (HalJS.isArray(keys)) {
+
+				return HalJS._reduceObject(keys, function(resource, key) {
+					return HalJS._invalidateEmbed(key, resource);
+				}, resource);
+
+			} else {
+
+				return HalJS._invalidateEmbed(keys, resource);
+
+			}
+		},
+
+		_invalidateEmbed: function(key, resource) {
+
+			if (!HalJS.isLinked(key, resource)) {
+
+				resource = resource.set('_links', resource.get('_links').set('provider_configurations',
+					new Immutable.Map({
+						href: resource.get('_embedded').get('provider_configurations').get('_links').get('self').get('href')
+					})
+				));
+
+			}
+
+			return resource.set('_embedded', resource.get('_embedded').delete(key));
+		},
+
+		/**
+		 * Applies a function against an accumulator and each value of the array
+		 * (from left-to-right) has to reduce it to a single value.
+		 *
+		 * @param  {Array|Object} collection
+		 * @param  {Function} cb
+		 * @param  {*} initialValue
+		 * @return {*}
+		 */
+		_reduceObject: function(collection, cb, initialValue) {
+			return Array.prototype.reduce.call(collection, cb, initialValue);
+		},
+
+		/**
+		 * Returns a new object containing the objects values
+		 * default from the defaults object
+		 *
+		 * @param  {Object} object
+		 * @param  {Object} defaults
+		 * @return {Object}
+		 */
+		_defaults: function(object, defaults) {
+			return HalJS._reduceObject(defaults, function(object, value, key) {
+
+				if (!object[key]) {
+					object[key] = value;
+				}
+
+				return object;
+
+			}, object);
+		},
+
 		_getKeys: function(keys, resource) {
-			return when.keys.all(HalJS.reduceObject(keys, function(object, key, index) {
+			return when.keys.all(HalJS._reduceObject(keys, function(object, key, index) {
 
 				if (HalJS.isObject(key)) {
 					object[key.name] = HalJS._getKey(key, resource);
@@ -253,6 +283,7 @@
 		_getFromResource: function(key, resource) {
 
 			if (HalJS.isObject(key) || (!HalJS.isEmbedded(key, resource) && HalJS.isLinked(key, resource))) {
+
 				return HalJS._getLink(key, resource);
 			}
 
@@ -287,14 +318,18 @@
 			}
 
 			if (HalJS.isVector(resource.get('_links').get(key))) {
-				return when
-					.all(resource.get('_links').get(key).toArray().map(function(link) {
-						return HalJS.fetch(link.get('href'));
-					}))
-					.then(HalJS.toImmutable);
+				return HalJS._getVectorOfLinks(key, resource, values);
 			}
 
 			return HalJS.fetch(resource.get('_links').get(key).get('href'));
+		},
+
+		_getVectorOfLinks: function(key, resource, values) {
+			return when
+				.all(resource.get('_links').get(key).toArray().map(function(link) {
+					return HalJS.fetch(link.get('href'));
+				}))
+				.then(HalJS.toImmutable);
 		},
 
 		/**
@@ -364,7 +399,7 @@
 
 			var fragments = link.get('href').match(/{([^}]+)}/g);
 
-			return HalJS.reduceObject(fragments, function(link, fragment) {
+			return HalJS._reduceObject(fragments, function(link, fragment) {
 				fragment = fragment.replace('{', '').replace('}', '');
 
 				if(values[fragment]) {

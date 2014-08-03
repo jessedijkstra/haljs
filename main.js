@@ -13,8 +13,6 @@
 	// Immutable
 	var Immutable = require('./node_modules/immutable/dist/Immutable');
 
-	var _ = require('./node_modules/lodash/lodash');
-
 
 	// Include keys
 	when.keys = require('./node_modules/when/keys');
@@ -141,8 +139,6 @@
 		}).then(function(values) {
 			console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories', 'background-color: #0f0; padding: 5px; display: block;');
 
-			console.log(values);
-
 			values.get('providers').forEach(function(provider) {
 
 				var issues = values.get('issues').filter(function(issue) {
@@ -154,5 +150,17 @@
 
 			console.log('');
 		}).done();
+
+	immutableApi
+		.fold(HalJS.invalidate, 'provider_configurations')
+		.fold(HalJS.get, 'provider_configurations')
+		.then(function(data) {
+
+			console.log('%c Invalidate provider_configurations and refetch it', 'background-color: #0f0; padding: 5px; display: block;');
+
+			console.log(data.toJSON());
+
+			console.log('');
+		});
 
 })();

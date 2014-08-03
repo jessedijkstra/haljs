@@ -8,9 +8,7 @@
     "when": "^3.4.2"
   },
   "devDependencies": {
-    "browserify": "^5.9.1",
-    "lodash": "^2.4.1",
-    "vcr": "0.0.4"
+    "browserify": "^5.9.1"
   },
   "scripts": {
     "browserify-test": "browserify -s main main.js --no-detect-globals -o build/main.js"
