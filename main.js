@@ -163,4 +163,14 @@
 			console.log('');
 		});
 
+	immutableApi
+		.fold(HalJS.invalidate, ['provider_categories', 'provider_configurations'])
+		.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
+		.then(function(data) {
+			console.log('%c Invalidate provider_configurations and providers_categories and refetch it', 'background-color: #0f0; padding: 5px; display: block;');
+
+			console.log(data.toJSON());
+
+			console.log('');
+		});
 })();

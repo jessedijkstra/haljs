@@ -166,6 +166,7 @@
 		},
 
 		invalidate: function(keys, resource) {
+
 			if (HalJS.isArray(keys)) {
 
 				return HalJS._reduceObject(keys, function(resource, key) {
@@ -183,9 +184,9 @@
 
 			if (!HalJS.isLinked(key, resource)) {
 
-				resource = resource.set('_links', resource.get('_links').set('provider_configurations',
+				resource = resource.set('_links', resource.get('_links').set(key,
 					new Immutable.Map({
-						href: resource.get('_embedded').get('provider_configurations').get('_links').get('self').get('href')
+						href: resource.get('_embedded').get(key).get('_links').get('self').get('href')
 					})
 				));
 
