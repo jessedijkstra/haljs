@@ -39,7 +39,7 @@
 	immutableApi
 		.then(function(api) {
 
-			console.log('%c Fetch API (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch API', 'background-color: #0f0; padding: 5px; display: block;');
 
 			console.log(api.toJSON());
 
@@ -52,7 +52,23 @@
 		.fold(HalJS.get, {name: 'user', values: {user_id: 'jesse'}})
 		.then(function(user) {
 
-			console.log('%c Fetch users with id "jesse" and "pepijn" (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch users with id "jesse"', 'background-color: #0f0; padding: 5px; display: block;');
+
+			console.log(user.toJSON());
+
+			console.log('');
+
+		})
+		.done();
+
+	// Fetch users with id 'jesse' and 'pepijn'
+	immutableApi
+		.fold(HalJS.get, [
+			{name: 'user', values: [{user_id: 'jesse'}, {user_id: 'pepijn'}]},
+		])
+		.then(function(user) {
+
+			console.log('%c Fetch users with id "jesse" and "pepijn"', 'background-color: #0f0; padding: 5px; display: block;');
 
 			console.log(user.toJSON());
 
@@ -67,7 +83,7 @@
 		.fold(HalJS.get, ['provider_categories', 'provider_configurations'])
 		.then(function(resources) {
 
-			console.log('%c Fetch Providers Categories and Configurations and display categories with provider names (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch Providers Categories and Configurations and display categories with provider names', 'background-color: #0f0; padding: 5px; display: block;');
 
 			HalJS.get('configurations', resources.get('provider_configurations')).then(function(configurations) {
 
@@ -102,7 +118,7 @@
 		.fold(HalJS.get, 'issues')
 		.then(function(issues) {
 
-			console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch Publications, then Categories, then Issues, and display covers of the issues', 'background-color: #0f0; padding: 5px; display: block;');
 
 			issues.forEach(function(issue) {
 				console.log(issue.get('_links').get('page_preview').get('href'));
@@ -123,7 +139,7 @@
 					.fold(HalJS.get, 'issues')
 			}).then(HalJS.toImmutable);
 		}).then(function(values) {
-			console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories (immutable)', 'background-color: #0f0; padding: 5px; display: block;');
+			console.log('%c Fetch the amount of times a provider is current published in the kiosk among different categories', 'background-color: #0f0; padding: 5px; display: block;');
 
 			console.log(values);
 

@@ -60,6 +60,10 @@
 			return value !== null && typeof value === 'object';
 		},
 
+		isString: function(value) {
+			return typeof value === 'string';
+		},
+
 		/**
 		 * Check if a value is a vector
 		 *
@@ -114,6 +118,15 @@
 		 */
 		toImmutable: function(value) {
 			return new Immutable.fromJS(value);
+		},
+
+
+		isEmbedded: function(key, resource) {
+			return resource.get('_embedded') && resource.get('_embedded').get(key);
+		},
+
+		isLinked: function(key, resource) {
+			return resource.get('_links') && resource.get('_links').get(key);
 		},
 
 		/**
@@ -175,19 +188,29 @@
 
 			if (HalJS.isArray(keys)) {
 
-				return when.keys.all(HalJS.reduce(keys, function(object, key, index) {
-
-					object[key] = HalJS._getKey(key, resource);
-
-					return object;
-
-				}, {})).then(HalJS.toImmutable);
+				return HalJS._getKeys(keys, resource);
 
 			} else {
 
 				return HalJS._getKey(keys, resource);
 
 			}
+		},
+
+		_getKeys: function(keys, resource) {
+			return when.keys.all(HalJS.reduce(keys, function(object, key, index) {
+
+				if (HalJS.isObject(key)) {
+					object[key.name] = HalJS._getKey(key, resource);
+				}
+
+				if (HalJS.isString(key)) {
+					object[key] = HalJS._getKey(key, resource);
+				}
+
+				return object;
+
+			}, [])).then(HalJS.toImmutable);
 		},
 
 		/**
@@ -229,16 +252,12 @@
 		 */
 		_getFromResource: function(key, resource) {
 
-			if (HalJS.isObject(key)) {
-				return HalJS._getTemplatedLink(key.name, resource, key.values);
-			}
-
-			if (resource.get('_embedded') && resource.get('_embedded').get(key)) {
-				return HalJS._getEmbed(key, resource);
-			}
-
-			if (resource.get('_links') && resource.get('_links').get(key)) {
+			if (HalJS.isObject(key) || (!HalJS.isEmbedded(key, resource) && HalJS.isLinked(key, resource))) {
 				return HalJS._getLink(key, resource);
+			}
+
+			if (HalJS.isEmbedded(key, resource)) {
+				return HalJS._getEmbed(key, resource);
 			}
 		},
 
@@ -263,6 +282,10 @@
 		 */
 		_getLink: function(key, resource, values) {
 
+			if (HalJS.isObject(key)) {
+				return HalJS._getTemplatedLink(key.name, resource, key.values);
+			}
+
 			if (HalJS.isVector(resource.get('_links').get(key))) {
 				return when
 					.all(resource.get('_links').get(key).toArray().map(function(link) {
@@ -282,17 +305,33 @@
 		 * @return {Promise}
 		 */
 		_getTemplatedLink: function(key, resource, values) {
+
+			if ( HalJS.isArray(values) ) {
+				return HalJS._getVectorOfMultipleTemplatedLinks(key, resource, values);
+			}
+
 			if (HalJS.isVector(resource.get('_links').get(key))) {
-
-				return when
-					.all(resource.get('_links').get(key).toArray().map(function(link) {
-						return HalJS.fetch(HalJS._parseTemplatedLink(link, values));
-					}))
-					.then(HalJS.toImmutable);
-
+				return HalJS._getVectorOfTemplatedLinks(key, resource, values);
 			}
 
 			return HalJS.fetch(HalJS._parseTemplatedLink(resource.get('_links').get(key), values));
+		},
+
+		_getVectorOfTemplatedLinks: function(key, resource, values) {
+
+			return when
+				.all(resource.get('_links').get(key).toArray().map(function(link) {
+					return HalJS.fetch(HalJS._parseTemplatedLink(link, values));
+				}))
+				.then(HalJS.toImmutable);
+		},
+
+		_getVectorOfMultipleTemplatedLinks: function(key, resource, values) {
+			return when.all(values.map(function(values) {
+
+				return HalJS.fetch(HalJS._parseTemplatedLink(resource.get('_links').get(key), values));
+
+			})).then(HalJS.toImmutable);
 		},
 
 		/**
