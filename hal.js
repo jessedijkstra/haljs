@@ -29,15 +29,15 @@
 		},
 
 		/**
-		 * Flattens (shallow) an nested array to an array
+		 * Flattens (shallow) an nested array or vectory to corresponding type
 		 *
-		 * @param  {Array} array
-		 * @return {Array}
+		 * @param  {Array|Vector} array
+		 * @return {Array|Vector}
 		 */
-		flatten: function(array) {
-			return HalJS.reduce(array, function(a, b) {
+		flatten: function(vector) {
+			return vector.reduce(function(a, b) {
 				return a.concat(b);
-			}, []);
+			}, new Immutable.Vector());
 		},
 
 		/**
@@ -157,14 +157,8 @@
 		 * @param  {String} url
 		 * @return {Promise}
 		 */
-		fetch: function(url, immutable) {
-			return when(HalJS.ajax(HalJS.defaults({url: url}, HalJS.ajaxOptions))).then(function(data) {
-				if (immutable) {
-					return HalJS.toImmutable(data);
-				} else {
-					return data;
-				}
-			});
+		fetch: function(url) {
+			return when(HalJS.ajax(HalJS.defaults({url: url}, HalJS.ajaxOptions))).then(HalJS.toImmutable);
 		},
 
 		/**
@@ -179,19 +173,19 @@
 		 */
 		get: function(keys, resource) {
 
-			var mutableResource = HalJS.toMutable(resource);
-
 			if (HalJS.isArray(keys)) {
 
 				return when.keys.all(HalJS.reduce(keys, function(object, key, index) {
-					object[key] = HalJS._getKey(key, mutableResource);
+
+					object[key] = HalJS._getKey(key, resource);
 
 					return object;
-				}, {})).fold(HalJS._parse, resource);
+
+				}, {})).then(HalJS.toImmutable);
 
 			} else {
 
-				return HalJS._getKey(keys, mutableResource).fold(HalJS._parse, resource);
+				return HalJS._getKey(keys, resource);
 
 			}
 		},
@@ -205,8 +199,8 @@
 		 * @return {Promise}
 		 */
 		_getKey: function(key, resource) {
-			if (HalJS.isArray(resource)) {
-				return when(HalJS._getFromArrayOfResources(key, resource));
+			if (HalJS.isVector(resource)) {
+				return when(HalJS._getFromVectorOfResources(key, resource));
 			} else {
 				return when(HalJS._getFromResource(key, resource));
 			}
@@ -216,13 +210,13 @@
 		 * Get values from multiple resources and flatten them into 1 array
 		 *
 		 * @param  {String} key
-		 * @param  {JSON} resources
+		 * @param  {Vector} resources
 		 * @return {Promise}
 		 */
-		_getFromArrayOfResources: function(key, resources) {
-			return when.map(resources, function(resource) {
-				return HalJS._getFromResource(key, resource);
-			}).then(HalJS.flatten);
+		_getFromVectorOfResources: function(key, resources) {
+			return when
+				.all(resources.toArray().map(HalJS._getFromResource.bind(null, key)))
+				.then(HalJS.toImmutable).then(HalJS.flatten);
 		},
 
 		/**
@@ -239,11 +233,11 @@
 				return HalJS._getTemplatedLink(key.name, resource, key.values);
 			}
 
-			if (resource._embedded && resource._embedded[key]) {
+			if (resource.get('_embedded') && resource.get('_embedded').get(key)) {
 				return HalJS._getEmbed(key, resource);
 			}
 
-			if (resource._links && resource._links[key]) {
+			if (resource.get('_links') && resource.get('_links').get(key)) {
 				return HalJS._getLink(key, resource);
 			}
 		},
@@ -256,7 +250,7 @@
 		 * @return {JSON}
 		 */
 		_getEmbed: function(key, resource) {
-			return resource._embedded[key];
+			return resource.get('_embedded').get(key);
 		},
 
 		/**
@@ -269,13 +263,15 @@
 		 */
 		_getLink: function(key, resource, values) {
 
-			if (HalJS.isArray(resource._links[key])) {
-				return when.map(resource._links[key], function(link) {
-					return HalJS.fetch(link.href);
-				});
+			if (HalJS.isVector(resource.get('_links').get(key))) {
+				return when
+					.all(resource.get('_links').get(key).toArray().map(function(link) {
+						return HalJS.fetch(link.get('href'));
+					}))
+					.then(HalJS.toImmutable);
 			}
 
-			return HalJS.fetch(resource._links[key].href);
+			return HalJS.fetch(resource.get('_links').get(key).get('href'));
 		},
 
 		/**
@@ -286,15 +282,17 @@
 		 * @return {Promise}
 		 */
 		_getTemplatedLink: function(key, resource, values) {
-			if (HalJS.isArray(resource._links[key])) {
+			if (HalJS.isVector(resource.get('_links').get(key))) {
 
-				return when.map(resource._links[key], function(link) {
-					return HalJS.fetch(HalJS._parseTemplatedLink(link, values));
-				});
+				return when
+					.all(resource.get('_links').get(key).toArray().map(function(link) {
+						return HalJS.fetch(HalJS._parseTemplatedLink(link, values));
+					}))
+					.then(HalJS.toImmutable);
 
 			}
 
-			return HalJS.fetch(HalJS._parseTemplatedLink(resource._links[key], values));
+			return HalJS.fetch(HalJS._parseTemplatedLink(resource.get('_links').get(key), values));
 		},
 
 		/**
@@ -306,13 +304,13 @@
 		 */
 		_parseTemplatedLink: function(link, values) {
 
-			var fragments = link.href.match(/{([^}]+)}/g);
+			var fragments = link.get('href').match(/{([^}]+)}/g);
 
 			return HalJS.reduce(fragments, function(link, fragment) {
 				fragment = fragment.replace('{', '').replace('}', '');
 
 				if(values[fragment]) {
-					link = link.href.replace('{' + fragment + '}', values[fragment]);
+					link = link.get('href').replace('{' + fragment + '}', values[fragment]);
 				}
 
 				return link;
