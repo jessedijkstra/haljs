@@ -1,12 +1,6 @@
 (function() {
 	'use strict';
 
-	/**
-	 * TODO:
-	 * - Allow templated variables in an array
-	 * - Add zoom levels
-	 */
-
 	var Immutable = require('./node_modules/immutable/dist/Immutable');
 
 	var when = require('./node_modules/when/when');
